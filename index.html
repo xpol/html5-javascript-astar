@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<link href="screen.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="jquery-3.1.1.min.js" charset="utf-8"></script>
+<script type="text/javascript" src="graph.js" charset="utf-8"></script>
+<script>
+  var selectedElement = null;
+  var currentX = 0;
+  var currentY = 0;
+  $( document ).ready(function() {
+    var graph = Graph.generate(8, 2, 800, 600, 40)
+    Graph.attach(graph, $('#graph'))
+  });
+</script>
+
+<body>
+
+<svg id="graph" width="1200" height="800">
+</svg>
+
+</body>
+</html>

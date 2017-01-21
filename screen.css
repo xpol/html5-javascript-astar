@@ -1,0 +1,27 @@
+svg {
+  background: #282D2C
+}
+
+.line {
+  stroke-width: 6;
+  stroke: #3B6664;
+}
+
+.point {
+  stroke-width: 6;
+  stroke: #3E8989;
+  fill: #3E8989;
+  cursor: move;
+}
+
+.start {
+  stroke: #2CDA9D;
+}
+
+.point:hover {
+  stroke: #05F140;
+}
+
+.line .shortest {
+  stroke: #05F140;
+}
