@@ -7,15 +7,22 @@
   var selectedElement = null;
   var currentX = 0;
   var currentY = 0;
-  $( document ).ready(function() {
-    var graph = Graph.generate(8, 2, 800, 600, 40)
-    Graph.attach(graph, $('#graph'))
+  var doc = $( document )
+
+  doc.ready(function() {
+    var w = doc.width()
+    var h = doc.height()
+    var svg = $('#svg')
+    svg.attr('width', w)
+    svg.attr('height', h)
+    var graph = Graph.generate(20, 2, w, h, 30)
+    Graph.attach(graph, $('#svg'))
   });
 </script>
 
 <body>
 
-<svg id="graph" width="1200" height="800">
+<svg id="svg" width="600" height="400">
 </svg>
 
 </body>

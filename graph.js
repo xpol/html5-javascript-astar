@@ -3,10 +3,20 @@ function random(min, max) {
 }
 
 // conert form dom element id to point id
-var toPointId = function(id) {
+var decodePointId = function(id) {
   return parseInt(id.replace(/^P/, ''));
 };
 
+var makeLineId = function(p1, p2) {
+  if (p1 > p2) {
+    return 'L' + p2 + '-' + p1
+  }
+  return 'L' + p1 + '-' + p2
+};
+
+var makePointId = function(p) {
+  return 'P' + p
+};
 
 var draggable = function(element, graph) {
   var currentX, currentY, selected = null;
@@ -39,7 +49,7 @@ var draggable = function(element, graph) {
         $(line).attr('y2', cy)
       })
 
-      var p = graph.points[toPointId(id)]
+      var p = graph.points[decodePointId(id)]
       p.x = cx
       p.y = cy
     }
@@ -54,20 +64,46 @@ var draggable = function(element, graph) {
 };
 
 var start = null, end = null;
+var astar;
 
-var clickable = function(element, graph) {
+var markStart = function(element) {
+  if (start) {
+    start.removeClass('start')
+  }
+  start = element
+  start.addClass('start')
+}
+
+var clickable = function(element) {
   element.dblclick(function(e) {
-    if (start) {
-      start.removeClass('start')
-    }
-    start = $(e.target);
-    start.addClass('start')
+    markStart($(e.target))
   })
 }
 
-var hoverable = function(element) {
+var markPath = function(path) {
+  $('.shortest').removeClass('shortest')
+  for (var i = 0; i < path.length; ++i) {
+    var pid = makePointId(path[i])
+    $(pid).addClass('shortest')
+  }
+  for (var i = 1; i < path.length; ++i) {
+    var lid = '#'+makeLineId(path[i-1], path[i])
+    $(lid).addClass('shortest')
+  }
+}
+
+var hoverable = function(element, graph) {
   element.hover(function(e) {
-    end = $(e.target)
+    if (end)
+      end.removeClass('end')
+    if (start) {
+      end = $(e.target)
+      end.addClass('end')
+      var goal = decodePointId(end.attr('id'))
+      var from = decodePointId(start.attr('id'))
+      var path = astar(from, goal, graph)
+      markPath(path)
+    }
   })
 }
 
@@ -79,14 +115,97 @@ var tohtml = function(graph) {
     var line = lines[i]
     var p0 = points[line.p0]
     var p1 = points[line.p1]
-    html += '<line id="L'+ i +'" class="line from-P'+line.p0+' to-P' + line.p1+ '" x1="'+p0.x+'" y1="'+p0.y+'" x2="'+p1.x+'" y2="'+p1.y+'" />'
+    html += '<line id="'+ makeLineId(line.p0, line.p1) +'" class="from-P'+line.p0+' to-P' + line.p1+ ' line normal" x1="'+p0.x+'" y1="'+p0.y+'" x2="'+p1.x+'" y2="'+p1.y+'" />'
   }
   for (i = 0; i < points.length; i++) {
     var p = points[i]
-    html += '<circle class="point" id="P'+ p.id +'" cx="'+ p.x +'" cy="'+ p.y +'" r="20" />'
+    html += '<circle class="point" id="'+ makePointId(p.id) +'" cx="'+ p.x +'" cy="'+ p.y +'" r="20" />'
   }
   return html
 };
+
+
+var arrayof = function(size, def) {
+  var a = []
+  for (var i = 0; i < size; i++) {
+    a.push(def)
+  }
+  return a
+};
+
+var distance = function(p1, p2) {
+  // Approximation by using octagons approach
+  var dx = Math.abs(p1.x - p2.x)
+  var dy = Math.abs(p1.y - p2.y)
+  return 1.426776695*Math.min(0.7071067812*(dx+dy), Math.max (dx, dy))
+};
+
+var heuristicCost = function(p1, p2) {
+  return distance(p1, p2)
+};
+
+function reconstructPath(cameFrom, current) {
+  var total_path = [current]
+  while (cameFrom[current] != null) {
+    current = cameFrom[current]
+    total_path.push(current)
+  }
+  return total_path
+}
+
+
+
+// https://en.wikipedia.org/wiki/A*_search_algorithm
+astar = function(start, goal, graph) {
+  var points = graph.points
+  var closedSet = new Set()
+  var openSet = new Set([start])
+
+  var cameFrom = arrayof(points.length, null)
+  var gScore = arrayof(points.length, null)
+  gScore[start] = 0
+
+  var fScore = arrayof(points.length, Math.Infinity)
+  fScore[start] = heuristicCost(points[start], points[goal])
+
+
+  while (openSet.length != 0) {
+    var current = openSet.values().next().value
+    for (let item of openSet) {
+      if (fScore[item] < fScore[current]) {
+        current = item
+      }
+    }
+
+    if (current == goal) {
+      return reconstructPath(cameFrom, current)
+    }
+
+    openSet.delete(current)
+    closedSet.add(current)
+
+    var neighbors = points[current].neighbors
+    for (var i = 0; i < neighbors.length; ++i) {
+      var neighbor = neighbors[i]
+      if (closedSet.has(neighbor)) {
+        continue
+      }
+
+      var tentative_gScore = gScore[current] + distance(points[current], points[neighbor])
+      if (!openSet.has(neighbor)) {
+        openSet.add(neighbor)
+      }
+      else if (tentative_gScore >= gScore[neighbor])
+          continue
+
+      // This path is the best until now. Record it!
+      cameFrom[neighbor] = current
+      gScore[neighbor] = tentative_gScore
+      fScore[neighbor] = gScore[neighbor] + heuristicCost(points[neighbor], points[goal])
+    }
+  }
+  return []
+}
 
 
 
@@ -127,8 +246,6 @@ window.Graph = {
     draggable(points, graph)
     clickable(points, graph)
     hoverable(points, graph)
-  },
-  slove:function(from, to, graph) {
-
+    markStart($(points[0]))
   }
 }

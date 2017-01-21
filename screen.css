@@ -2,6 +2,10 @@ svg {
   background: #282D2C
 }
 
+.line.shortest {
+  stroke: red;
+}
+
 .line {
   stroke-width: 6;
   stroke: #3B6664;
@@ -15,13 +19,13 @@ svg {
 }
 
 .start {
-  stroke: #2CDA9D;
+  stroke: red;
+}
+
+.end {
+  stroke: yellow;
 }
 
 .point:hover {
-  stroke: #05F140;
-}
-
-.line .shortest {
-  stroke: #05F140;
+  stroke: yellow;
 }
